@@ -1,36 +1,47 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <pthread.h>
+#include <semaphore.h>
+
 #include <SDL2/SDL.h>
 
-typedef enum {JT_STATE_INIT, JT_STATE_RUNNING, JT_STATE_ABORT} jt_state_t;
-typedef enum {JT_MODE_INIT, JT_MODE_STILL, JT_MODE_ANIMATION} jt_mode_t;
-
-typedef struct jt_machine_s
-{
-    jt_state_t state;
-    jt_mode_t  mode;
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-} jt_machine_t;
+#include "jt_machine.h"
+#include "jt_render.h"
+#include "jt_thread.h"
 
 jt_machine_t machine;
 
-void initialize ()
+void jt_initialize ()
 {
     machine.state = JT_STATE_INIT;
+    machine.mode = JT_MODE_STILL;
+    machine.debug = JT_TRUE;
+    machine.width = 640;
+    machine.height = 480;
+    machine.thread_count = 4;
 
     if (SDL_Init (SDL_INIT_EVERYTHING) == -1)
     {
-        fprintf (stderr, "Error: SDL_Init failed.\n");
+        fprintf (stderr, "Error: SDL_Init: %s\n", SDL_GetError ());
         machine.state = JT_STATE_ABORT;
         return;
     }
 
-    SDL_CreateWindowAndRenderer (0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP, &machine.window, &machine.renderer);
+    SDL_CreateWindowAndRenderer (0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
+                                 &machine.window, &machine.renderer);
     if (machine.window == NULL || machine.renderer == NULL)
     {
-        fprintf (stderr, "Error: SDL_CreateWindowAndRenderer failed.\n");
+        fprintf (stderr, "Error: SDL_CreateWindowAndRenderer: %s\n", SDL_GetError ());
+        machine.state = JT_STATE_ABORT;
+        return;
+    }
+
+    machine.texture = SDL_CreateTexture (machine.renderer, SDL_PIXELFORMAT_ARGB8888,
+                                         SDL_TEXTUREACCESS_STATIC, machine.width, machine.height);
+    if (machine.texture == NULL)
+    {
+        fprintf (stderr, "Error: SDL_CreateTexture: %s\n", SDL_GetError ());
         machine.state = JT_STATE_ABORT;
         return;
     }
@@ -40,15 +51,24 @@ void initialize ()
     SDL_RenderClear (machine.renderer);
     SDL_RenderPresent (machine.renderer);
 
+    /* Initialize threads */
+    jt_create_threads ();
+
+    machine.state = JT_STATE_READY;
 }
 
-void cleanup ()
+void jt_cleanup ()
 {
+    jt_join_threads ();
+
     if (machine.renderer)
         SDL_DestroyRenderer (machine.renderer);
 
     if (machine.window)
         SDL_DestroyWindow (machine.window);
+
+    //if (machine.texture)
+    //    SDL_FreeTexture (machine.texture);
 
     SDL_Quit();
 }
@@ -57,11 +77,32 @@ int main (int argc, char **argv)
 {
     fprintf (stdout, "JoppyTrace %s\n", JT_VERSION);
 
-    initialize ();
+    jt_initialize ();
 
-    usleep (5000000);
+    if (machine.state = JT_STATE_READY)
+    {
+        switch (machine.mode)
+        {
+            case JT_MODE_STILL:
+                jt_render_still ();
+                break;
 
-    cleanup ();
+            case JT_MODE_ANIMATION:
+                fprintf (stderr, "Error: Animation mode not yet implemented.\n");
+                machine.state = JT_STATE_ABORT;
+                break;
 
-    return EXIT_SUCCESS;
+            default:
+                fprintf (stderr, "Error: Invalid mode.\n");
+                machine.state = JT_STATE_ABORT;
+                break;
+        }
+    }
+
+    jt_cleanup ();
+
+    if (machine.state == JT_STATE_ABORT)
+        return EXIT_FAILURE;
+    else
+        return EXIT_SUCCESS;
 }
