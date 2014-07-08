@@ -6,24 +6,34 @@
 
 #include <SDL2/SDL.h>
 
+#include "jt_types.h"
 #include "jt_machine.h"
 #include "jt_thread.h"
+#include "jt_vector.h"
+#include "jt_colour.h"
 
 extern jt_machine_t machine;
 
+jt_colour_t jt_render_pixel (int x, int y)
+{
+    jt_colour_t result = {0.5, 0.5, 0.8};
+    return result;
+}
+
 void jt_still_do_chunk (uint32_t chunk)
 {
-    unsigned char pixels[640 * sizeof (uint32_t)];
     int x;
+    jt_colour_t pixel;
 
-    usleep (100000); /* some fake work... */
+    usleep (50000); /* some fake work... */
 
     for (x = 0; x < 640; x++)
     {
-        machine.pixels [640 * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x + 0] = 128;
-        machine.pixels [640 * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x + 1] = 128;
-        machine.pixels [640 * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x + 2] = 128;
-        machine.pixels [640 * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x + 3] = 255;
+        pixel = jt_render_pixel (x, chunk);
+
+        jt_write_colour_to_mem (
+                &machine.pixels [640 * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x],
+                pixel);
     }
 
 }
