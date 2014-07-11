@@ -21,6 +21,13 @@ jt_vector_t jt_vector_cross (jt_vector_t a, jt_vector_t b)
     return result;
 }
 
+jt_float_t jt_vector_distance (jt_vector_t a, jt_vector_t b)
+{
+    return JT_SQRT ( (a.x - b.x) * (a.x - b.x)
+                   + (a.y - b.y) * (a.y - b.y)
+                   + (a.z - b.z) * (a.z - b.z));
+}
+
 jt_float_t jt_vector_dot (jt_vector_t a, jt_vector_t b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;

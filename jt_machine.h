@@ -21,7 +21,6 @@ typedef enum /* TODO: This belongs in jt_types.h */
     JT_TRUE
 } jt_bool_t;
 
-/* TODO: The machine should have a reference to the scene.. */
 typedef struct jt_machine_s
 {
     jt_state_t      state;

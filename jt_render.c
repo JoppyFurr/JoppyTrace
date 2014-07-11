@@ -18,42 +18,49 @@
 
 extern jt_machine_t machine;
 
+/* TODO: Figure out something tidy for this... */
+jt_scene_t scene;
+
 /*    Scratchpad - Code does not belong here     */
 /*                                               */
 
-jt_scene_t test_scene;
-
 void jt_bake_test_scene ()
 {
-    test_scene.eye.x  =   0.0;
-    test_scene.eye.y  =   0.0;
-    test_scene.eye.z  =   0.0;
+    scene.eye.x  =   0.0;
+    scene.eye.y  =   0.0;
+    scene.eye.z  =   0.0;
 
-    test_scene.up.x   =   0.0;
-    test_scene.up.y   =   1.0;
-    test_scene.up.z   =   0.0;
+    scene.up.x   =   0.0;
+    scene.up.y   =   1.0;
+    scene.up.z   =   0.0;
 
-    test_scene.lookat.x =   0.0;
-    test_scene.lookat.y =   0.0;
-    test_scene.lookat.z = -10.0;
+    scene.lookat.x =   0.0;
+    scene.lookat.y =   0.0;
+    scene.lookat.z = -10.0;
 
     /* TODO: This is not currently using 'real' degrees */
-    test_scene.fov    =  30.0;
+    scene.fov    =  30.0;
 
-    test_scene.primitive = malloc (2 * sizeof (jt_primitive_t));
-    test_scene.primitive_count = 2;
+    scene.primitive = malloc (3 * sizeof (jt_primitive_t));
+    scene.primitive_count = 3;
 
-    test_scene.primitive[0].intersect = jt_sphere_intersect;
-    test_scene.primitive[0].sphere.centre.x =   0.0;
-    test_scene.primitive[0].sphere.centre.y =   0.0;
-    test_scene.primitive[0].sphere.centre.z = -10.0;
-    test_scene.primitive[0].sphere.radius   =   4.0;
+    scene.primitive[0].intersect = jt_sphere_intersect;
+    scene.primitive[0].sphere.centre.x =   0.0;
+    scene.primitive[0].sphere.centre.y =   0.0;
+    scene.primitive[0].sphere.centre.z = -10.0;
+    scene.primitive[0].sphere.radius   =   0.4;
 
-    test_scene.primitive[1].intersect = jt_sphere_intersect;
-    test_scene.primitive[1].sphere.centre.x =   8.0;
-    test_scene.primitive[1].sphere.centre.y =   0.0;
-    test_scene.primitive[1].sphere.centre.z = -10.0;
-    test_scene.primitive[1].sphere.radius   =   3.0;
+    scene.primitive[1].intersect = jt_sphere_intersect;
+    scene.primitive[1].sphere.centre.x =   1.0;
+    scene.primitive[1].sphere.centre.y =   0.4;
+    scene.primitive[1].sphere.centre.z = -10.0;
+    scene.primitive[1].sphere.radius   =   0.4;
+
+    scene.primitive[2].intersect = jt_sphere_intersect;
+    scene.primitive[2].sphere.centre.x =   2.0;
+    scene.primitive[2].sphere.centre.y =   0.0;
+    scene.primitive[2].sphere.centre.z = -10.0;
+    scene.primitive[2].sphere.radius   =   0.4;
 }
 
 jt_colour_t background_colour = {0.5, 0.5, 0.5};
@@ -63,7 +70,7 @@ jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r)
 {
     jt_float_t ret;
 
-    ret = jt_scene_intersect (&test_scene, r, NULL);
+    ret = jt_scene_intersect (&scene, r, NULL);
 
     if (ret == 0.0)
         return background_colour;
@@ -78,19 +85,22 @@ jt_colour_t jt_render_pixel (int x, int y)
     /* Calculate the initial ray */
     /* Note:  Could this be simplified
      * by interpolation? */
-    ray.origin = test_scene.eye;
+    ray.origin = scene.eye;
+
+    jt_float_t picture_width = jt_vector_distance (scene.eye, scene.lookat) * JT_TAN (scene.fov / 0.0174532925); /* Assume the user uses degrees.. We use radians. */
+    /* TODO: Let the parser decide on the unit, and always store radians... */
 
     /* y component */
-    pixel_position = jt_vector_add (test_scene.lookat,
-                                    jt_vector_scale (test_scene.up, (y - 240.0) * (test_scene.fov / 640.0)));
+    pixel_position = jt_vector_add (scene.lookat,
+                                    jt_vector_scale (scene.up, (240.0 - y) * (picture_width / 640.0)));
 
     /* x component */
     pixel_position = jt_vector_add (
             pixel_position,
-            jt_vector_scale (jt_vector_cross (test_scene.up, jt_vector_unit ( jt_vector_sub (test_scene.lookat, test_scene.eye))),
-                             (x - 320.0) * (test_scene.fov / 640.0)));
+            jt_vector_scale (jt_vector_cross (jt_vector_unit ( jt_vector_sub (scene.lookat, scene.eye)), scene.up),
+                             (x - 320.0) * (picture_width / 640.0)));
 
-    ray.direction = jt_vector_unit (jt_vector_sub (pixel_position, test_scene.eye));
+    ray.direction = jt_vector_unit (jt_vector_sub (pixel_position, scene.eye));
 
     return jt_cast_ray_at_test_scene (ray);
 }
@@ -99,8 +109,6 @@ void jt_still_do_chunk (uint32_t chunk)
 {
     int x;
     jt_colour_t pixel;
-
-    usleep (10000); /* some fake work... */
 
     for (x = 0; x < 640; x++)
     {

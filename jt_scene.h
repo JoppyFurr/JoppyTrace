@@ -3,7 +3,7 @@ typedef struct jt_scene_s
     jt_vector_t up;
     jt_vector_t eye;
     jt_vector_t lookat;
-    jt_float_t fov;
+    jt_float_t fov; /* This currently assumes degrees... Could be changed to radians in the future */
 
     /* jt_material_t */
 
