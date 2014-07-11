@@ -10,14 +10,65 @@
 #include "jt_machine.h"
 #include "jt_thread.h"
 #include "jt_vector.h"
+#include "jt_ray.h"
+#include "jt_primitive.h"
 #include "jt_colour.h"
+
 
 extern jt_machine_t machine;
 
+/*    Scratchpad - Code does not belong here     */
+/*                                               */
+
+jt_vector_t eye = {0.0, 0.0, 0.0};
+jt_vector_t up = {0.0, 1.0, 0.0};
+jt_vector_t lookat = {0.0, 0.0, -10.0};
+
+/* TODO: This is not currently using 'real' degrees */
+jt_float_t fov = 30.0;
+
+jt_colour_t background_colour = {0.5, 0.5, 0.5};
+jt_colour_t sphere_colour = {1.0, 0.0, 0.0};
+
+jt_colour_t jt_cast_ray_at_test_sphere (jt_ray_t r)
+{
+    jt_primitive_t sphere;
+    sphere.intersect = jt_sphere_intersect;
+    sphere.sphere.centre = lookat;
+    sphere.sphere.radius = 3.0;
+
+    jt_float_t ret;
+
+    ret = (*sphere.intersect) (&sphere, r, NULL);
+
+    if (ret == 0.0)
+        return background_colour;
+
+    return sphere_colour;
+}
+
 jt_colour_t jt_render_pixel (int x, int y)
 {
-    jt_colour_t result = {0.5, 0.5, 0.8};
-    return result;
+    jt_vector_t pixel_position;
+    jt_ray_t ray;
+    /* Calculate the initial ray */
+    /* Note:  Could this be simplified
+     * by interpolation? */
+    ray.origin = eye;
+
+    /* y component */
+    pixel_position = jt_vector_add (lookat,
+                                    jt_vector_scale (up, (y - 240.0) * (fov / 640.0)));
+
+    /* x component */
+    pixel_position = jt_vector_add (
+            pixel_position,
+            jt_vector_scale (jt_vector_cross (up, jt_vector_unit ( jt_vector_sub (lookat, eye))),
+                             (x - 320.0) * (fov / 640.0)));
+
+    ray.direction = jt_vector_unit (jt_vector_sub (pixel_position, eye));
+
+    return jt_cast_ray_at_test_sphere (ray);
 }
 
 void jt_still_do_chunk (uint32_t chunk)
@@ -25,7 +76,7 @@ void jt_still_do_chunk (uint32_t chunk)
     int x;
     jt_colour_t pixel;
 
-    usleep (50000); /* some fake work... */
+    usleep (10000); /* some fake work... */
 
     for (x = 0; x < 640; x++)
     {
@@ -37,6 +88,8 @@ void jt_still_do_chunk (uint32_t chunk)
     }
 
 }
+/*                                               */
+/*    Scratchpad - Code does not belong here     */
 
 void jt_render_still ()
 {
