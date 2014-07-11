@@ -15,12 +15,13 @@ typedef enum
     JT_MODE_ANIMATION
 } jt_mode_t;
 
-typedef enum
+typedef enum /* TODO: This belongs in jt_types.h */
 {
     JT_FALSE = 0,
     JT_TRUE
 } jt_bool_t;
 
+/* TODO: The machine should have a reference to the scene.. */
 typedef struct jt_machine_s
 {
     jt_state_t      state;

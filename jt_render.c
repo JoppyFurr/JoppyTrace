@@ -13,6 +13,7 @@
 #include "jt_ray.h"
 #include "jt_primitive.h"
 #include "jt_colour.h"
+#include "jt_scene.h"
 
 
 extern jt_machine_t machine;
@@ -20,26 +21,49 @@ extern jt_machine_t machine;
 /*    Scratchpad - Code does not belong here     */
 /*                                               */
 
-jt_vector_t eye = {0.0, 0.0, 0.0};
-jt_vector_t up = {0.0, 1.0, 0.0};
-jt_vector_t lookat = {0.0, 0.0, -10.0};
+jt_scene_t test_scene;
 
-/* TODO: This is not currently using 'real' degrees */
-jt_float_t fov = 30.0;
+void jt_bake_test_scene ()
+{
+    test_scene.eye.x  =   0.0;
+    test_scene.eye.y  =   0.0;
+    test_scene.eye.z  =   0.0;
+
+    test_scene.up.x   =   0.0;
+    test_scene.up.y   =   1.0;
+    test_scene.up.z   =   0.0;
+
+    test_scene.lookat.x =   0.0;
+    test_scene.lookat.y =   0.0;
+    test_scene.lookat.z = -10.0;
+
+    /* TODO: This is not currently using 'real' degrees */
+    test_scene.fov    =  30.0;
+
+    test_scene.primitive = malloc (2 * sizeof (jt_primitive_t));
+    test_scene.primitive_count = 2;
+
+    test_scene.primitive[0].intersect = jt_sphere_intersect;
+    test_scene.primitive[0].sphere.centre.x =   0.0;
+    test_scene.primitive[0].sphere.centre.y =   0.0;
+    test_scene.primitive[0].sphere.centre.z = -10.0;
+    test_scene.primitive[0].sphere.radius   =   4.0;
+
+    test_scene.primitive[1].intersect = jt_sphere_intersect;
+    test_scene.primitive[1].sphere.centre.x =   8.0;
+    test_scene.primitive[1].sphere.centre.y =   0.0;
+    test_scene.primitive[1].sphere.centre.z = -10.0;
+    test_scene.primitive[1].sphere.radius   =   3.0;
+}
 
 jt_colour_t background_colour = {0.5, 0.5, 0.5};
 jt_colour_t sphere_colour = {1.0, 0.0, 0.0};
 
-jt_colour_t jt_cast_ray_at_test_sphere (jt_ray_t r)
+jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r)
 {
-    jt_primitive_t sphere;
-    sphere.intersect = jt_sphere_intersect;
-    sphere.sphere.centre = lookat;
-    sphere.sphere.radius = 3.0;
-
     jt_float_t ret;
 
-    ret = (*sphere.intersect) (&sphere, r, NULL);
+    ret = jt_scene_intersect (&test_scene, r, NULL);
 
     if (ret == 0.0)
         return background_colour;
@@ -54,21 +78,21 @@ jt_colour_t jt_render_pixel (int x, int y)
     /* Calculate the initial ray */
     /* Note:  Could this be simplified
      * by interpolation? */
-    ray.origin = eye;
+    ray.origin = test_scene.eye;
 
     /* y component */
-    pixel_position = jt_vector_add (lookat,
-                                    jt_vector_scale (up, (y - 240.0) * (fov / 640.0)));
+    pixel_position = jt_vector_add (test_scene.lookat,
+                                    jt_vector_scale (test_scene.up, (y - 240.0) * (test_scene.fov / 640.0)));
 
     /* x component */
     pixel_position = jt_vector_add (
             pixel_position,
-            jt_vector_scale (jt_vector_cross (up, jt_vector_unit ( jt_vector_sub (lookat, eye))),
-                             (x - 320.0) * (fov / 640.0)));
+            jt_vector_scale (jt_vector_cross (test_scene.up, jt_vector_unit ( jt_vector_sub (test_scene.lookat, test_scene.eye))),
+                             (x - 320.0) * (test_scene.fov / 640.0)));
 
-    ray.direction = jt_vector_unit (jt_vector_sub (pixel_position, eye));
+    ray.direction = jt_vector_unit (jt_vector_sub (pixel_position, test_scene.eye));
 
-    return jt_cast_ray_at_test_sphere (ray);
+    return jt_cast_ray_at_test_scene (ray);
 }
 
 void jt_still_do_chunk (uint32_t chunk)
@@ -98,6 +122,9 @@ void jt_render_still ()
     uint32_t render_end_time = 0;
     uint32_t frame_start_time;
     uint32_t frame_end_time;
+
+    /* TODO: Remove this once we have a parser... */
+    jt_bake_test_scene ();
 
     /* Kick-off rendering */
     machine.work_do_chunk = jt_still_do_chunk;
