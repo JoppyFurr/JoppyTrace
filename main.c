@@ -17,8 +17,10 @@ void jt_initialize ()
     machine.state = JT_STATE_INIT;
     machine.mode = JT_MODE_STILL;
     machine.debug = JT_TRUE;
-    machine.width = 640;
-    machine.height = 480;
+//    machine.width = 640;
+//    machine.height = 480;
+    machine.width = 1920;
+    machine.height = 1080;
     machine.thread_count = 4;
 
     if (SDL_Init (SDL_INIT_EVERYTHING) == -1)
@@ -46,6 +48,14 @@ void jt_initialize ()
         return;
     }
 
+    machine.pixel_data = malloc (machine.width * machine.height * sizeof (uint32_t));
+    if (machine.pixel_data == NULL)
+    {
+        fprintf (stderr, "Error: Unable to allocate for machine.pixel_data.\n");
+        machine.state = JT_STATE_ABORT;
+        return;
+    }
+
     /* Clear the screen */
     SDL_SetRenderDrawColor (machine.renderer, 0, 0, 0, 255);
     SDL_RenderClear (machine.renderer);
@@ -67,6 +77,10 @@ void jt_cleanup ()
     if (machine.window)
         SDL_DestroyWindow (machine.window);
 
+    if (machine.pixel_data)
+        free (machine.pixel_data);
+
+    /* TODO: Fix this.. */
     //if (machine.texture)
     //    SDL_FreeTexture (machine.texture);
 

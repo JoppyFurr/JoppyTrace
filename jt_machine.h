@@ -28,7 +28,7 @@ typedef struct jt_machine_s
     jt_bool_t       debug;
     uint32_t        width;
     uint32_t        height;
-    uint8_t         pixels[640 * 480 * sizeof (uint32_t)];
+    uint8_t        *pixel_data;
 
     /* Threading */
     pthread_t      *thread;

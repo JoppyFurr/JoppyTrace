@@ -1,3 +1,3 @@
-void jt_crate_threads ();
-void jt_post_thraeds ();
+void jt_create_threads ();
+void jt_post_threads ();
 void jt_join_threads ();

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <pthread.h>
 #include <semaphore.h>
@@ -11,8 +12,9 @@
 #include "jt_thread.h"
 #include "jt_vector.h"
 #include "jt_ray.h"
-#include "jt_primitive.h"
 #include "jt_colour.h"
+#include "jt_material.h"
+#include "jt_primitive.h"
 #include "jt_scene.h"
 
 
@@ -26,56 +28,61 @@ jt_scene_t scene;
 
 void jt_bake_test_scene ()
 {
-    scene.eye.x  =   0.0;
-    scene.eye.y  =   0.0;
-    scene.eye.z  =   0.0;
+    scene.eye    = (jt_vector_t) {0.0, 0.0,   0.0};
+    scene.up     = (jt_vector_t) {0.0, 1.0,   0.0};
+    scene.lookat = (jt_vector_t) {0.0, 0.0, -10.0};
+    scene.fov    = 30.0 / 0.0174532925;
 
-    scene.up.x   =   0.0;
-    scene.up.y   =   1.0;
-    scene.up.z   =   0.0;
 
-    scene.lookat.x =   0.0;
-    scene.lookat.y =   0.0;
-    scene.lookat.z = -10.0;
+    /* TODO: malloc without free */
+    scene.material = malloc (3 * sizeof (jt_material_t));
+    scene.material_count = 3;
 
-    /* TODO: This is not currently using 'real' degrees */
-    scene.fov    =  30.0;
+    /* Red */
+    scene.material[0].colour = (jt_colour_t) {1.0, 0.0, 0.0};
 
+    /* Yellow */
+    scene.material[1].colour = (jt_colour_t) {0.8, 0.8, 0.0};
+
+    /* Green */
+    scene.material[2].colour = (jt_colour_t) {0.0, 0.5, 0.0};
+
+    /* TODO: malloc without free */
     scene.primitive = malloc (3 * sizeof (jt_primitive_t));
     scene.primitive_count = 3;
 
+    /* Sphere 1 */
     scene.primitive[0].intersect = jt_sphere_intersect;
-    scene.primitive[0].sphere.centre.x =   0.0;
-    scene.primitive[0].sphere.centre.y =   0.0;
-    scene.primitive[0].sphere.centre.z = -10.0;
+    scene.primitive[0].material = &scene.material[0];
+    scene.primitive[0].sphere.centre  = (jt_vector_t) {0.0, 0.0, -10.0};
     scene.primitive[0].sphere.radius   =   0.4;
 
+    /* Sphere 2 */
     scene.primitive[1].intersect = jt_sphere_intersect;
-    scene.primitive[1].sphere.centre.x =   1.0;
-    scene.primitive[1].sphere.centre.y =   0.4;
-    scene.primitive[1].sphere.centre.z = -10.0;
+    scene.primitive[1].material = &scene.material[1];
+    scene.primitive[1].sphere.centre  = (jt_vector_t) {1.0, 0.4, -10.0};
     scene.primitive[1].sphere.radius   =   0.4;
 
+    /* Sphere 3 - Planet */
     scene.primitive[2].intersect = jt_sphere_intersect;
-    scene.primitive[2].sphere.centre.x =   2.0;
-    scene.primitive[2].sphere.centre.y =   0.0;
-    scene.primitive[2].sphere.centre.z = -10.0;
-    scene.primitive[2].sphere.radius   =   0.4;
+    scene.primitive[2].material = &scene.material[2];
+    scene.primitive[2].sphere.centre  = (jt_vector_t) {0.0, -101.0, -10.0};
+    scene.primitive[2].sphere.radius   =   100.0;
 }
 
-jt_colour_t background_colour = {0.5, 0.5, 0.5};
-jt_colour_t sphere_colour = {1.0, 0.0, 0.0};
+jt_colour_t background_colour = {0.5, 0.5, 0.6};
 
 jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r)
 {
     jt_float_t ret;
+    jt_material_t material;
 
-    ret = jt_scene_intersect (&scene, r, NULL);
+    ret = jt_scene_intersect (&scene, r, NULL, &material);
 
     if (ret == 0.0)
         return background_colour;
 
-    return sphere_colour;
+    return material.colour;
 }
 
 jt_colour_t jt_render_pixel (int x, int y)
@@ -87,18 +94,17 @@ jt_colour_t jt_render_pixel (int x, int y)
      * by interpolation? */
     ray.origin = scene.eye;
 
-    jt_float_t picture_width = jt_vector_distance (scene.eye, scene.lookat) * JT_TAN (scene.fov / 0.0174532925); /* Assume the user uses degrees.. We use radians. */
-    /* TODO: Let the parser decide on the unit, and always store radians... */
+    jt_float_t picture_width = jt_vector_distance (scene.eye, scene.lookat) * JT_TAN (scene.fov);
 
     /* y component */
     pixel_position = jt_vector_add (scene.lookat,
-                                    jt_vector_scale (scene.up, (240.0 - y) * (picture_width / 640.0)));
+                                    jt_vector_scale (scene.up, (machine.height / 2.0 - y) * (picture_width / machine.width)));
 
     /* x component */
     pixel_position = jt_vector_add (
             pixel_position,
             jt_vector_scale (jt_vector_cross (jt_vector_unit ( jt_vector_sub (scene.lookat, scene.eye)), scene.up),
-                             (x - 320.0) * (picture_width / 640.0)));
+                             (x - machine.width / 2.0) * (picture_width / machine.width)));
 
     ray.direction = jt_vector_unit (jt_vector_sub (pixel_position, scene.eye));
 
@@ -110,12 +116,12 @@ void jt_still_do_chunk (uint32_t chunk)
     int x;
     jt_colour_t pixel;
 
-    for (x = 0; x < 640; x++)
+    for (x = 0; x < machine.width; x++)
     {
         pixel = jt_render_pixel (x, chunk);
 
         jt_write_colour_to_mem (
-                &machine.pixels [640 * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x],
+                &machine.pixel_data [machine.width * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x],
                 pixel);
     }
 
@@ -136,7 +142,7 @@ void jt_render_still ()
 
     /* Kick-off rendering */
     machine.work_do_chunk = jt_still_do_chunk;
-    machine.work_total_chunks = 480;
+    machine.work_total_chunks = machine.height;
     machine.state = JT_STATE_RUNNING;
     render_start_time = SDL_GetTicks ();
     jt_post_threads (); /* kick */
@@ -177,7 +183,7 @@ void jt_render_still ()
             }
         }
 
-        if (SDL_UpdateTexture (machine.texture, NULL, machine.pixels, machine.width * sizeof (uint32_t)))
+        if (SDL_UpdateTexture (machine.texture, NULL, machine.pixel_data, machine.width * sizeof (uint32_t)))
         {
             fprintf (stderr, "Error: SDL_UpdateTexture: %s\n", SDL_GetError ());
             machine.state = JT_STATE_ABORT;

@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 
 #include "jt_types.h"
 #include "jt_vector.h"
 #include "jt_ray.h"
+#include "jt_colour.h"
+#include "jt_material.h"
 #include "jt_primitive.h"
 
 jt_float_t jt_sphere_intersect (jt_primitive_t *p, jt_ray_t r, jt_vector_t *normal)
