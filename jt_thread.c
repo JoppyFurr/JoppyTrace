@@ -6,6 +6,7 @@
 
 #include <SDL2/SDL.h>
 
+#include "jt_types.h"
 #include "jt_machine.h"
 #include "jt_render.h"
 

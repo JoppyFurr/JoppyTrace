@@ -1,3 +1,10 @@
+
+typedef enum /* TODO: Now that we have it.. Use it */
+{
+    JT_FALSE = 0,
+    JT_TRUE
+} jt_bool_t;
+
 #define USE_DOUBLE 1
 
 #ifdef USE_DOUBLE

@@ -6,22 +6,46 @@
 
 #include <SDL2/SDL.h>
 
+#include "jt_types.h"
 #include "jt_machine.h"
 #include "jt_render.h"
 #include "jt_thread.h"
 
 jt_machine_t machine;
 
-void jt_initialize ()
+int jt_cli (int argc, char **argv)
+{
+    for (int i = 1; i < argc; i++)
+    {
+        if (!strcmp (argv[i], "-hd"))
+        {
+            machine.width = 1920;
+            machine.height = 1080;
+        }
+        else if (!strcmp (argv[i], "-4k"))
+        {
+            machine.width = 3840;
+            machine.height = 2160;
+        }
+        else
+        {
+            fprintf (stderr, "Unknown option: %s.\n", argv[i]);
+            exit (EXIT_FAILURE);
+        }
+    }
+    return 0;
+}
+
+void jt_initialize (int argc, char **argv)
 {
     machine.state = JT_STATE_INIT;
     machine.mode = JT_MODE_STILL;
     machine.debug = JT_TRUE;
-//    machine.width = 640;
-//    machine.height = 480;
-    machine.width = 1920;
-    machine.height = 1080;
+    machine.width = 640;
+    machine.height = 480;
     machine.thread_count = 4;
+
+    jt_cli (argc, argv);
 
     if (SDL_Init (SDL_INIT_EVERYTHING) == -1)
     {
@@ -91,7 +115,7 @@ int main (int argc, char **argv)
 {
     fprintf (stdout, "JoppyTrace %s\n", JT_VERSION);
 
-    jt_initialize ();
+    jt_initialize (argc, argv);
 
     if (machine.state = JT_STATE_READY)
     {

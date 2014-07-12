@@ -16,7 +16,7 @@
 #include "jt_material.h"
 #include "jt_primitive.h"
 #include "jt_scene.h"
-
+#include "jt_parse.h"
 
 extern jt_machine_t machine;
 
@@ -26,52 +26,6 @@ jt_scene_t scene;
 /*    Scratchpad - Code does not belong here     */
 /*                                               */
 
-void jt_bake_test_scene ()
-{
-    scene.eye    = (jt_vector_t) {0.0, 0.0,   0.0};
-    scene.up     = (jt_vector_t) {0.0, 1.0,   0.0};
-    scene.lookat = (jt_vector_t) {0.0, 0.0, -10.0};
-    scene.fov    = 30.0 / 0.0174532925;
-
-
-    /* TODO: malloc without free */
-    scene.material = malloc (3 * sizeof (jt_material_t));
-    scene.material_count = 3;
-
-    /* Red */
-    scene.material[0].colour = (jt_colour_t) {1.0, 0.0, 0.0};
-
-    /* Yellow */
-    scene.material[1].colour = (jt_colour_t) {0.8, 0.8, 0.0};
-
-    /* Green */
-    scene.material[2].colour = (jt_colour_t) {0.0, 0.5, 0.0};
-
-    /* TODO: malloc without free */
-    scene.primitive = malloc (3 * sizeof (jt_primitive_t));
-    scene.primitive_count = 3;
-
-    /* Sphere 1 */
-    scene.primitive[0].intersect = jt_sphere_intersect;
-    scene.primitive[0].material = &scene.material[0];
-    scene.primitive[0].sphere.centre  = (jt_vector_t) {0.0, 0.0, -10.0};
-    scene.primitive[0].sphere.radius   =   0.4;
-
-    /* Sphere 2 */
-    scene.primitive[1].intersect = jt_sphere_intersect;
-    scene.primitive[1].material = &scene.material[1];
-    scene.primitive[1].sphere.centre  = (jt_vector_t) {1.0, 0.4, -10.0};
-    scene.primitive[1].sphere.radius   =   0.4;
-
-    /* Sphere 3 - Planet */
-    scene.primitive[2].intersect = jt_sphere_intersect;
-    scene.primitive[2].material = &scene.material[2];
-    scene.primitive[2].sphere.centre  = (jt_vector_t) {0.0, -101.0, -10.0};
-    scene.primitive[2].sphere.radius   =   100.0;
-}
-
-jt_colour_t background_colour = {0.5, 0.5, 0.6};
-
 jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r)
 {
     jt_float_t ret;
@@ -80,7 +34,7 @@ jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r)
     ret = jt_scene_intersect (&scene, r, NULL, &material);
 
     if (ret == 0.0)
-        return background_colour;
+        return scene.background;
 
     return material.colour;
 }
@@ -137,8 +91,10 @@ void jt_render_still ()
     uint32_t frame_start_time;
     uint32_t frame_end_time;
 
-    /* TODO: Remove this once we have a parser... */
-    jt_bake_test_scene ();
+    /* TODO: Yet another copy.. */
+    /* TODO: Free what we malloc. scene, materials, primitives... */
+
+    scene = *jt_parse_scene ("test_scene.jts");
 
     /* Kick-off rendering */
     machine.work_do_chunk = jt_still_do_chunk;

@@ -1,10 +1,10 @@
 typedef struct jt_scene_s
 {
-    jt_vector_t up;
-    jt_vector_t eye;
-    jt_vector_t lookat;
-    jt_float_t fov; /* TODO: Pen, paper, ruler... Confirm that fov calculations are correct. */
-
+    jt_vector_t     up;
+    jt_vector_t     eye;
+    jt_vector_t     lookat;
+    jt_float_t      fov; /* TODO: Confirm that fov calculations are correct. */
+    jt_colour_t     background;
     jt_material_t  *material;
     uint32_t        material_count;
 
