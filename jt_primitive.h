@@ -9,7 +9,7 @@ typedef struct jt_sphere_s
 
 typedef struct jt_primitive_s
 {
-    jt_float_t  (*intersect) (struct jt_primitive_s *p, jt_ray_t r, jt_vector_t *normal);
+    jt_float_t  (*intersect) (struct jt_primitive_s *p, jt_ray_t *r, jt_vector_t *normal);
     jt_material_t *material;
     union
     {
@@ -17,4 +17,4 @@ typedef struct jt_primitive_s
     };
 } jt_primitive_t;
 
-jt_float_t jt_sphere_intersect (jt_primitive_t *p, jt_ray_t r, jt_vector_t *normal);
+jt_float_t jt_sphere_intersect (jt_primitive_t *p, jt_ray_t *r, jt_vector_t *normal);

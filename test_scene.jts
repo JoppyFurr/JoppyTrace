@@ -9,7 +9,7 @@
 # file.
 #
 # Parameters:
-#  - Material <red> <green> <blue> <shine>
+#  - Material <red> <green> <blue> <specular> <shine>
 #  - Sphere   <x> <y> <z> <radius> <material index>
 
 Eye     0.0   0.0   0.0;
@@ -21,9 +21,14 @@ Background  0.5 0.8 1.0;
 Material_count  3;
 Primitive_count 3;
 
-Material 1.0 0.0 0.0 0.0; # 0 - Red
-Material 0.9 0.9 0.0 0.0; # 1 - Yellow
-Material 0.0 0.5 0.0 0.0; # 2 - Green
+# Lighting
+Lighting_intensity 0.8;
+Lighting_ambient   0.4;
+Lighting_direction 0.32444 0.81111 0.48666;
+
+Material 1.0 0.0 0.0 0.8 200.0; # 0 - Red
+Material 0.9 0.9 0.0 0.5 200.0; # 1 - Yellow
+Material 0.0 0.5 0.0 0.0   0.0; # 2 - Planet Green
 
 Sphere   0.0    0.0  -10.0    0.4  0; # 0 - Centre red sphere
 Sphere   1.0    0.4  -10.0    0.4  1; # 1 - High right yellow sphere

@@ -17,6 +17,7 @@
 #include "jt_primitive.h"
 #include "jt_scene.h"
 #include "jt_parse.h"
+#include "jt_lighting.h"
 
 extern jt_machine_t machine;
 
@@ -26,17 +27,18 @@ jt_scene_t scene;
 /*    Scratchpad - Code does not belong here     */
 /*                                               */
 
-jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r)
+jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r) /* POINTER! */
 {
     jt_float_t ret;
-    jt_material_t material;
+    jt_vector_t normal;
+    jt_material_t material; /* POINTER! */
 
-    ret = jt_scene_intersect (&scene, r, NULL, &material);
+    ret = jt_scene_intersect (&scene, &r, &normal, &material);
 
     if (ret == 0.0)
         return scene.background;
 
-    return material.colour;
+    return jt_phong_illumination (&material, &r, normal, &scene);
 }
 
 jt_colour_t jt_render_pixel (int x, int y)
@@ -48,6 +50,7 @@ jt_colour_t jt_render_pixel (int x, int y)
      * by interpolation? */
     ray.origin = scene.eye;
 
+    /* TODO: Is the distance even required? Assuming a distance of 1 may simplify the math */
     jt_float_t picture_width = jt_vector_distance (scene.eye, scene.lookat) * JT_TAN (scene.fov);
 
     /* y component */

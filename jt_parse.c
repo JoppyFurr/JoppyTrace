@@ -158,6 +158,45 @@ jt_scene_t *jt_parse_scene (char *filename)
             }
         }
 
+        else if (!strcmp ("Lighting_intensity", buffer))
+        {
+            scene->lighting_intensity = jt_parse_float (file);
+            fscanf (file, "%s", buffer);
+            if (strcmp (";", buffer))
+            {
+                fprintf (stderr, "Syntax error in %s: Expected ';' after 'Lighting_intensity'.\n",
+                         filename);
+                parse_okay = JT_FALSE;
+                break;
+            }
+        }
+
+        else if (!strcmp ("Lighting_ambient", buffer))
+        {
+            scene->lighting_ambient = jt_parse_float (file);
+            fscanf (file, "%s", buffer);
+            if (strcmp (";", buffer))
+            {
+                fprintf (stderr, "Syntax error in %s: Expected ';' after 'Lighting_ambient'.\n",
+                         filename);
+                parse_okay = JT_FALSE;
+                break;
+            }
+        }
+
+        else if (!strcmp ("Lighting_direction", buffer))
+        {
+            scene->lighting_direction = jt_parse_vector (file);
+            fscanf (file, "%s", buffer);
+            if (strcmp (";", buffer))
+            {
+                fprintf (stderr, "Syntax error in %s: Expected ';' after 'Lighting_direction'.\n",
+                         filename);
+                parse_okay = JT_FALSE;
+                break;
+            }
+        }
+
         else if (!strcmp ("Material_count", buffer))
         /* For now: Trust that the user has not used this line twice... */
         {
@@ -205,8 +244,9 @@ jt_scene_t *jt_parse_scene (char *filename)
         {
             if (material_index < scene->material_count)
             {
-                scene->material[material_index].colour = jt_parse_colour (file);
-                scene->material[material_index].shine  = jt_parse_float  (file);
+                scene->material[material_index].colour   = jt_parse_colour (file);
+                scene->material[material_index].specular = jt_parse_float  (file);
+                scene->material[material_index].shine    = jt_parse_float  (file);
                 material_index++;
                 fscanf (file, "%s", buffer);
                 if (strcmp (";", buffer))
