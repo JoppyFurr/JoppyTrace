@@ -21,10 +21,11 @@ jt_float_t jt_sphere_intersect (jt_primitive_t *p, jt_ray_t *r, jt_vector_t *nor
     jt_float_t root;
     jt_float_t squareDifference;
     jt_float_t discrim;
+    jt_vector_t collision_point;
 
-    q                = jt_vector_sub (s.centre, r->origin);
-    vDotQ            = jt_vector_dot (r->direction, q);
-    squareDifference = jt_vector_dot (q, q) - s.radius * s.radius;
+    q                = jt_vector_sub (&s.centre, &r->origin);
+    vDotQ            = jt_vector_dot (&r->direction, &q);
+    squareDifference = jt_vector_dot (&q, &q) - s.radius * s.radius;
     discrim          = vDotQ * vDotQ - squareDifference;
 
     if (discrim >= 0.0) {
@@ -34,12 +35,14 @@ jt_float_t jt_sphere_intersect (jt_primitive_t *p, jt_ray_t *r, jt_vector_t *nor
         t1   = (vDotQ + root);
 
         if (t0 > JT_SPHERE_MARGIN) {
-            *normal = jt_vector_unit ( jt_vector_sub (jt_point_on_ray (r, t0), s.centre ));
+            collision_point = jt_point_on_ray (r, &t0);
+            *normal = jt_vector_unit_sub (&collision_point, &s.centre );
             /* TODO: Will t0 evere equal 0.0? */
             return t0;
         }
         else if(t1 > JT_SPHERE_MARGIN) {
-            *normal = jt_vector_unit ( jt_vector_sub (jt_point_on_ray (r, t1), s.centre ));
+            collision_point = jt_point_on_ray (r, &t1);
+            *normal = jt_vector_unit_sub (&collision_point, &s.centre );
             /* TODO: Will t1 evere equal 0.0? */
             return t1;
         }

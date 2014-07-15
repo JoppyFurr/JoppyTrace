@@ -27,18 +27,19 @@ jt_scene_t scene;
 /*    Scratchpad - Code does not belong here     */
 /*                                               */
 
-jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t r) /* POINTER! */
+jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t *r)
 {
     jt_float_t ret;
     jt_vector_t normal;
-    jt_material_t material; /* POINTER! */
+    jt_material_t material;
 
-    ret = jt_scene_intersect (&scene, &r, &normal, &material);
+    /* TODO: normal and material are outputs.. How do we differentiate these from inputs? */
+    ret = jt_scene_intersect (&scene, r, &normal, &material);
 
     if (ret == 0.0)
         return scene.background;
 
-    return jt_phong_illumination (&material, &r, normal, &scene);
+    return jt_phong_illumination (&material, r, &normal, &scene);
 }
 
 jt_colour_t jt_render_pixel (int x, int y)
@@ -51,21 +52,25 @@ jt_colour_t jt_render_pixel (int x, int y)
     ray.origin = scene.eye;
 
     /* TODO: Is the distance even required? Assuming a distance of 1 may simplify the math */
-    jt_float_t picture_width = jt_vector_distance (scene.eye, scene.lookat) * JT_TAN (scene.fov);
+    jt_float_t picture_width = jt_vector_distance (&scene.eye, &scene.lookat) * JT_TAN (scene.fov);
 
     /* y component */
-    pixel_position = jt_vector_add (scene.lookat,
-                                    jt_vector_scale (scene.up, (machine.height / 2.0 - y) * (picture_width / machine.width)));
+    jt_float_t scene_y_movement_f  = (machine.height / 2.0 - y) * (picture_width / machine.width);
+    jt_vector_t scene_y_movement_v = jt_vector_scale (&scene.up, &scene_y_movement_f);
+
+    pixel_position = jt_vector_add (&scene.lookat, &scene_y_movement_v);
 
     /* x component */
-    pixel_position = jt_vector_add (
-            pixel_position,
-            jt_vector_scale (jt_vector_cross (jt_vector_unit ( jt_vector_sub (scene.lookat, scene.eye)), scene.up),
-                             (x - machine.width / 2.0) * (picture_width / machine.width)));
+    jt_float_t scene_x_movement_f   = (x - machine.width / 2.0) * (picture_width / machine.width);
+    jt_vector_t scene_z_direction_v = jt_vector_unit_sub (&scene.lookat, &scene.eye);
+    jt_vector_t scene_x_direction_v = jt_vector_cross (&scene_z_direction_v, &scene.up);
+    jt_vector_t scene_x_movement_v  = jt_vector_scale (&scene_x_direction_v, &scene_x_movement_f);
 
-    ray.direction = jt_vector_unit (jt_vector_sub (pixel_position, scene.eye));
+    pixel_position = jt_vector_add (&pixel_position, &scene_x_movement_v);
 
-    return jt_cast_ray_at_test_scene (ray);
+    ray.direction = jt_vector_unit_sub (&pixel_position, &scene.eye);
+
+    return jt_cast_ray_at_test_scene (&ray);
 }
 
 void jt_still_do_chunk (uint32_t chunk)
@@ -79,7 +84,7 @@ void jt_still_do_chunk (uint32_t chunk)
 
         jt_write_colour_to_mem (
                 &machine.pixel_data [machine.width * sizeof (uint32_t) * chunk + sizeof(uint32_t) * x],
-                pixel);
+                &pixel);
     }
 
 }
