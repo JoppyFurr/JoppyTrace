@@ -33,6 +33,15 @@ jt_float_t jt_vector_dot (jt_vector_t *a, jt_vector_t *b)
     return a->x * b->x + a->y * b->y + a->z * b->z;
 }
 
+jt_vector_t jt_vector_reflection (jt_vector_t *d, jt_vector_t *n)
+{
+    jt_float_t normal_scale = -2.0 * jt_vector_dot (n ,d);
+
+    return (jt_vector_t) { n->x * normal_scale + d->x,
+                           n->y * normal_scale + d->y,
+                           n->z * normal_scale + d->z };
+}
+
 jt_vector_t jt_vector_scale (jt_vector_t *v, jt_float_t *s)
 {
     return (jt_vector_t) { v->x * *s,

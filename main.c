@@ -41,8 +41,8 @@ void jt_initialize (int argc, char **argv)
     machine.state = JT_STATE_INIT;
     machine.mode = JT_MODE_STILL;
     machine.debug = JT_TRUE;
-    machine.width = 640;
-    machine.height = 480;
+    machine.width = 480;
+    machine.height = 270;
     machine.thread_count = 4;
 
     jt_cli (argc, argv);

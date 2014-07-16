@@ -244,9 +244,10 @@ jt_scene_t *jt_parse_scene (char *filename)
         {
             if (material_index < scene->material_count)
             {
-                scene->material[material_index].colour   = jt_parse_colour (file);
-                scene->material[material_index].specular = jt_parse_float  (file);
-                scene->material[material_index].shine    = jt_parse_float  (file);
+                scene->material[material_index].colour     = jt_parse_colour (file);
+                scene->material[material_index].specular   = jt_parse_float  (file);
+                scene->material[material_index].shine      = jt_parse_float  (file);
+                scene->material[material_index].reflection = jt_parse_float  (file);
                 material_index++;
                 fscanf (file, "%s", buffer);
                 if (strcmp (";", buffer))

@@ -27,11 +27,16 @@ jt_scene_t scene;
 /*  Scratchpad - Code could use a bit of a tidy  */
 /*                                               */
 
-jt_colour_t jt_cast_ray (jt_ray_t *r)
+/* Idea: If we pass in this ray's contribution to the pixel colour, maybe
+ * then we can use that information to decide on an early return due to
+ * the ray contributing less than displayable difference */
+jt_colour_t jt_cast_ray (jt_ray_t *r, int depth_remaining)
 {
+    jt_colour_t result;
     jt_float_t ret;
     jt_vector_t normal;
     jt_material_t material;
+    jt_vector_t intersection_point;
 
     /* TODO: normal and material are outputs.. How do we differentiate these from inputs? */
 
@@ -43,11 +48,12 @@ jt_colour_t jt_cast_ray (jt_ray_t *r)
     if (ret == 0.0)
         return scene.background;
 
+    intersection_point = jt_point_on_ray (r, &ret);
     /* Step 2: Calculate illumination for this intersection point */
 
     /* Shadow ray */
     jt_ray_t shadow_ray;
-    shadow_ray.origin = jt_point_on_ray (r, &ret);
+    shadow_ray.origin = intersection_point;
     shadow_ray.direction = scene.lighting_direction;
     jt_material_t unused_material;
     jt_vector_t   unused_vector;
@@ -55,10 +61,30 @@ jt_colour_t jt_cast_ray (jt_ray_t *r)
 
     if (ret == 0.0)
     {
-        return jt_phong_illumination (&material, r, &normal, &scene);
+        result = jt_phong_illumination (&material, r, &normal, &scene);
+    }
+    else
+    {
+        result = jt_ambient_illumination (&material, r, &normal, &scene);
     }
 
-    return jt_ambient_illumination (&material, r, &normal, &scene);
+    if (depth_remaining)
+    {
+        /* Reflection */
+        if (material.reflection != 0.0)
+        {
+            jt_ray_t reflection_ray;
+            jt_colour_t reflection_result;
+            reflection_ray.origin = intersection_point;
+            reflection_ray.direction = jt_vector_reflection (&r->direction, &normal);
+            reflection_result = jt_cast_ray (&reflection_ray, depth_remaining - 1);
+            result = (jt_colour_t) { result.r + reflection_result.r * material.reflection,
+                                     result.g + reflection_result.g * material.reflection,
+                                     result.b + reflection_result.b * material.reflection };
+
+        }
+    }
+    return result;
 }
 
 jt_colour_t jt_render_pixel (int x, int y)
@@ -73,6 +99,7 @@ jt_colour_t jt_render_pixel (int x, int y)
     /* TODO: Is the distance even required? Assuming a distance of 1 may simplify the math */
     jt_float_t picture_width = jt_vector_distance (&scene.eye, &scene.lookat) * JT_TAN (scene.fov);
 
+    /* TODO: scene_x_direction and scene_y_direction could be pre-calculated and stored as u and v */
     /* y component */
     jt_float_t scene_y_movement_f  = (machine.height / 2.0 - y) * (picture_width / machine.width);
     jt_vector_t scene_y_movement_v = jt_vector_scale (&scene.up, &scene_y_movement_f);
@@ -89,7 +116,7 @@ jt_colour_t jt_render_pixel (int x, int y)
 
     ray.direction = jt_vector_unit_sub (&pixel_position, &scene.eye);
 
-    return jt_cast_ray (&ray);
+    return jt_cast_ray (&ray, 4);
 }
 
 void jt_still_do_chunk (uint32_t chunk)
