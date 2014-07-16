@@ -17,29 +17,48 @@
 #include "jt_primitive.h"
 #include "jt_scene.h"
 #include "jt_parse.h"
-#include "jt_lighting.h"
+#include "jt_illumination.h"
 
 extern jt_machine_t machine;
 
 /* TODO: Figure out something tidy for this... */
 jt_scene_t scene;
 
-/*    Scratchpad - Code does not belong here     */
+/*  Scratchpad - Code could use a bit of a tidy  */
 /*                                               */
 
-jt_colour_t jt_cast_ray_at_test_scene (jt_ray_t *r)
+jt_colour_t jt_cast_ray (jt_ray_t *r)
 {
     jt_float_t ret;
     jt_vector_t normal;
     jt_material_t material;
 
     /* TODO: normal and material are outputs.. How do we differentiate these from inputs? */
+
+    /* TODO: The collision point is used in multiple places... Store it? */
+
+    /* Step 1: Cast the ray at the scene and find the intersection */
     ret = jt_scene_intersect (&scene, r, &normal, &material);
 
     if (ret == 0.0)
         return scene.background;
 
-    return jt_phong_illumination (&material, r, &normal, &scene);
+    /* Step 2: Calculate illumination for this intersection point */
+
+    /* Shadow ray */
+    jt_ray_t shadow_ray;
+    shadow_ray.origin = jt_point_on_ray (r, &ret);
+    shadow_ray.direction = scene.lighting_direction;
+    jt_material_t unused_material;
+    jt_vector_t   unused_vector;
+    ret = jt_scene_intersect (&scene, &shadow_ray, &unused_vector, &unused_material);
+
+    if (ret == 0.0)
+    {
+        return jt_phong_illumination (&material, r, &normal, &scene);
+    }
+
+    return jt_ambient_illumination (&material, r, &normal, &scene);
 }
 
 jt_colour_t jt_render_pixel (int x, int y)
@@ -70,7 +89,7 @@ jt_colour_t jt_render_pixel (int x, int y)
 
     ray.direction = jt_vector_unit_sub (&pixel_position, &scene.eye);
 
-    return jt_cast_ray_at_test_scene (&ray);
+    return jt_cast_ray (&ray);
 }
 
 void jt_still_do_chunk (uint32_t chunk)
@@ -89,7 +108,7 @@ void jt_still_do_chunk (uint32_t chunk)
 
 }
 /*                                               */
-/*    Scratchpad - Code does not belong here     */
+/*  Scratchpad - Code could use a bit of a tidy  */
 
 void jt_render_still ()
 {
